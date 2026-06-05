@@ -1,0 +1,1035 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  MessageCircle, Users, PauseCircle, PlayCircle, Search, Send, MoreVertical, 
+  Coffee, BookOpen, AlertTriangle, UserCheck, Clock, Activity, LogOut, 
+  ChevronRight, Monitor, Target, TrendingUp, UserPlus, RefreshCcw, 
+  AlertOctagon, UserX, TimerOff, ShoppingCart, Layers, Database, Zap, 
+  DollarSign, UploadCloud, FileSpreadsheet, PhoneCall, ArrowDownToLine, 
+  CheckCircle2, Inbox, PieChart, BarChart3, Filter, ShieldCheck, Crosshair, 
+  Percent, ListFilter, Menu, X, Crown, BrainCircuit, Sparkles, MessageSquarePlus
+} from 'lucide-react';
+
+// LOGO OFICIAL (URL raw do github para renderização)
+const LOGO_URL = "https://raw.githubusercontent.com/gilneilaurindo/tudoon/main/Logo%20tudo%20on%20(1).png";
+
+// DADOS MOCKADOS
+const MOCK_AGENTS = [
+  { id: 1, name: 'Ana Silva', status: 'online', activeChats: 3, sales: 12, convRate: 18.5, tma: '04:20', csat: 4.9, lastStatusChange: new Date().getTime() - 1200000 },
+  { id: 2, name: 'Carlos Mendes', status: 'paused', pauseReason: 'Lanche', activeChats: 0, sales: 5, convRate: 10.2, tma: '06:15', csat: 4.2, lastStatusChange: new Date().getTime() - 900000 },
+  { id: 3, name: 'Beatriz Costa', status: 'online', activeChats: 5, sales: 28, convRate: 25.4, tma: '03:45', csat: 5.0, lastStatusChange: new Date().getTime() - 3600000 },
+  { id: 4, name: 'Felipe Rocha', status: 'offline', activeChats: 0, sales: 0, convRate: 0, tma: '00:00', csat: 0, lastStatusChange: new Date().getTime() - 86400000 },
+  { id: 5, name: 'Mariana Lima', status: 'paused', pauseReason: 'Banheiro', activeChats: 0, sales: 15, convRate: 14.8, tma: '05:30', csat: 4.6, lastStatusChange: new Date().getTime() - 300000 },
+  { id: 6, name: 'João Santos', status: 'online', activeChats: 2, sales: 8, convRate: 12.0, tma: '05:00', csat: 4.5, lastStatusChange: new Date().getTime() - 600000 },
+];
+
+const MOCK_CHATS_RECEPTIVO = [
+  { id: 101, name: 'Empresa Alpha (Financeiro)', lastMessage: 'Podem enviar a nota fiscal?', time: '10:42', unread: 2, status: 'active', type: 'receptivo', messages: [
+    { sender: 'client', text: 'Bom dia, tudo bem?', time: '10:40' },
+    { sender: 'agent', text: 'Bom dia! Tudo ótimo. Como posso ajudar a Alpha hoje?', time: '10:41' },
+    { sender: 'client', text: 'Podem enviar a nota fiscal do último serviço?', time: '10:42' }
+  ]},
+  { id: 103, name: 'Clínica Sorriso', lastMessage: 'Precisamos de suporte urgente.', time: '10:58', unread: 1, status: 'active', type: 'receptivo', messages: [
+    { sender: 'client', text: 'Precisamos de suporte urgente. O sistema caiu.', time: '10:58' }
+  ]},
+];
+
+const MOCK_CARTEIRA = [
+  { id: 301, name: 'Roberto Almeida (VIP)', lastMessage: 'Obrigado pela ajuda de sempre!', time: 'Ontem', unread: 0, status: 'resolved', type: 'carteira', messages: [
+    { sender: 'agent', text: 'Oi Roberto, já renovei seu plano com aquele desconto VIP!', time: '15:00' },
+    { sender: 'client', text: 'Obrigado pela ajuda de sempre!', time: '15:15' }
+  ]},
+  { id: 302, name: 'Tech Solutions SA', lastMessage: 'Vamos agendar a implantação.', time: 'Segunda', unread: 0, status: 'active', type: 'carteira', messages: [
+    { sender: 'client', text: 'Vamos agendar a implantação.', time: '09:00' }
+  ]},
+];
+
+const PAUSE_REASONS = [
+  { id: 'lanche', name: 'Lanche / Refeição', icon: <Coffee className="w-5 h-5" />, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+  { id: 'banheiro', name: 'Banheiro', icon: <UserCheck className="w-5 h-5" />, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+  { id: 'feedback', name: 'Feedback / Reunião', icon: <Users className="w-5 h-5" />, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+  { id: 'treinamento', name: 'Treinamento', icon: <BookOpen className="w-5 h-5" />, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+  { id: 'sistema', name: 'Problema no Sistema', icon: <AlertTriangle className="w-5 h-5" />, color: 'text-red-400', bg: 'bg-red-400/10' },
+];
+
+const MOCK_LEADS_POOL = [
+  { id: 201, name: 'João Carlos Souza', phone: '(11) 98888-1111', info: 'Venda: R$ 1.200 (Há 3 meses)', origin: 'Base Inativa', unread: 0, score: 95 },
+  { id: 202, name: 'Marina Ribeiro', phone: '(21) 97777-2222', info: 'Intenção de Revenda', origin: 'Campanha Ads', unread: 0, score: 88 },
+  { id: 203, name: 'Pedro Almeida', phone: '(31) 96666-3333', info: 'Inadimplente - 15 dias', origin: 'Cobrança', unread: 0, score: 72 },
+];
+
+const QUICK_REPLIES = [
+  "Olá! Bom dia, como posso ajudar?",
+  "Poderia me confirmar seu CPF ou CNPJ?",
+  "Entendi. Só um minuto que vou verificar no sistema.",
+  "Feito! Posso ajudar em algo mais hoje?",
+  "Agradecemos o contato. Tenha um excelente dia!"
+];
+
+// Hook para Timer
+const useTimer = (startTime) => {
+  const [timeStr, setTimeStr] = useState('00:00');
+
+  useEffect(() => {
+    if (!startTime) {
+      setTimeStr('00:00');
+      return;
+    }
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const diff = now - startTime;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      const h = hours > 0 ? `${hours.toString().padStart(2, '0')}:` : '';
+      const m = minutes.toString().padStart(2, '0');
+      const s = seconds.toString().padStart(2, '0');
+      setTimeStr(`${h}${m}:${s}`);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [startTime]);
+
+  return timeStr;
+};
+
+const SplashScreen = ({ onComplete }) => {
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 3500); // 3.5s splash
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  return (
+    <div className="fixed inset-0 bg-[#0B0F19] z-50 flex flex-col items-center justify-center animate-in fade-in duration-500">
+      <div className="relative flex flex-col items-center">
+        {/* Glow de fundo */}
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#2140d7] rounded-full blur-[100px] opacity-30 animate-pulse"></div>
+        
+        {/* Logo */}
+        <div className="relative z-10 w-48 h-48 mb-8 animate-bounce" style={{ animationDuration: '3s' }}>
+          <img src={LOGO_URL} alt="Tudo On Logo" className="w-full h-full object-contain filter drop-shadow-[0_0_20px_rgba(33,64,215,0.8)]" />
+        </div>
+        
+        {/* Loader */}
+        <div className="relative z-10 w-48 h-1 bg-slate-800 rounded-full overflow-hidden">
+          <div className="absolute top-0 left-0 h-full bg-[#2140d7] rounded-full w-1/2 animate-[slide_1.5s_ease-in-out_infinite_alternate] shadow-[0_0_10px_#2140d7]"></div>
+        </div>
+        <p className="mt-4 text-slate-400 font-medium text-sm tracking-widest uppercase relative z-10">Iniciando Sistema...</p>
+      </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes slide {
+          0% { transform: translateX(-100%); width: 20%; }
+          50% { width: 50%; }
+          100% { transform: translateX(200%); width: 20%; }
+        }
+      `}} />
+    </div>
+  );
+};
+
+const AgentView = ({ onLogout }) => {
+  const [status, setStatus] = useState('online');
+  const [pauseReason, setPauseReason] = useState(null);
+  const [statusStartTime, setStatusStartTime] = useState(new Date().getTime());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  
+  // Abas: 'receptivo', 'ativo', 'carteira'
+  const [sidebarTab, setSidebarTab] = useState('receptivo'); 
+  const [chats, setChats] = useState(MOCK_CHATS_RECEPTIVO);
+  const [activeLeads, setActiveLeads] = useState([]);
+  const [carteira, setCarteira] = useState(MOCK_CARTEIRA);
+  const [availablePool, setAvailablePool] = useState(MOCK_LEADS_POOL);
+  
+  const [activeChatId, setActiveChatId] = useState(chats[0]?.id || null);
+  
+  // Mobile Sidebar State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const messagesEndRef = useRef(null);
+  const currentTimer = useTimer(statusStartTime);
+
+  // Determinar qual é o chat ativo dependendo da aba
+  let activeChat = null;
+  if (sidebarTab === 'receptivo') activeChat = chats.find(c => c.id === activeChatId);
+  else if (sidebarTab === 'ativo') activeChat = activeLeads.find(c => c.id === activeChatId);
+  else if (sidebarTab === 'carteira') activeChat = carteira.find(c => c.id === activeChatId);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeChat?.messages]);
+
+  // Handle mobile responsive auto-close
+  const selectChat = (id) => {
+    setActiveChatId(id);
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  };
+
+  const handlePause = (reason) => {
+    setStatus('paused');
+    setPauseReason(reason);
+    setStatusStartTime(new Date().getTime());
+    setIsModalOpen(false);
+  };
+
+  const handleReturn = () => {
+    setStatus('online');
+    setPauseReason(null);
+    setStatusStartTime(new Date().getTime());
+  };
+
+  const handleSendMessage = (e, forceText = null) => {
+    if (e) e.preventDefault();
+    const textToSend = forceText || inputValue;
+    if (!textToSend.trim() || !activeChat) return;
+
+    const newMessage = {
+      sender: 'agent',
+      text: textToSend,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    if (sidebarTab === 'receptivo') {
+      setChats(chats.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, newMessage] } : c));
+    } else if (sidebarTab === 'ativo') {
+      setActiveLeads(activeLeads.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, newMessage] } : c));
+    } else {
+      setCarteira(carteira.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, newMessage] } : c));
+    }
+    setInputValue('');
+  };
+
+  const handlePullLead = () => {
+    if (availablePool.length === 0) return;
+    const newLead = { 
+      ...availablePool[0], 
+      type: 'ativo',
+      messages: [{ sender: 'agent', text: 'Olá! A Tudo On notou seu interesse em nossos produtos. Podemos falar?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }] 
+    };
+    setActiveLeads([newLead, ...activeLeads]);
+    setAvailablePool(availablePool.slice(1));
+    selectChat(newLead.id);
+  };
+
+  return (
+    <div className="flex h-screen bg-[#0B0F19] text-slate-200 font-sans overflow-hidden relative">
+      
+      {/* Mobile Sidebar Overlay */}
+      {!isSidebarOpen && (
+        <button 
+          onClick={() => setIsSidebarOpen(true)}
+          className="md:hidden absolute top-4 left-4 z-50 p-2 bg-[#111827] border border-slate-700 rounded-lg text-white shadow-lg"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      )}
+
+      {isSidebarOpen && window.innerWidth < 768 && (
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsSidebarOpen(false)}></div>
+      )}
+
+      {/* SIDEBAR - Lista de Chats */}
+      <div className={`
+        fixed md:relative z-50 md:z-0
+        w-80 h-full border-r border-slate-800 flex flex-col bg-[#111827] 
+        transform transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        {/* Header Atendente */}
+        <div className="p-4 border-b border-slate-800">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#2140d7] to-blue-400 flex items-center justify-center font-bold text-white shadow-[0_0_15px_rgba(33,64,215,0.4)]">
+                ME
+              </div>
+              <div>
+                <h2 className="font-semibold text-sm">Meu Painel</h2>
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    {status === 'online' && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>}
+                    <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${status === 'online' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                  </span>
+                  <span className={`text-xs ${status === 'online' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    {status === 'online' ? 'Online' : `Pausado: ${pauseReason?.name}`}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 text-slate-400 hover:text-white rounded-lg"><X className="w-5 h-5"/></button>
+              <button onClick={onLogout} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title="Sair"><LogOut className="w-5 h-5" /></button>
+            </div>
+          </div>
+
+          {/* Controle de Pausa */}
+          {status === 'online' ? (
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 rounded-lg border border-slate-700 transition-all active:scale-95"
+            >
+              <PauseCircle className="w-5 h-5 text-amber-400" />
+              <span>Entrar em Pausa</span>
+            </button>
+          ) : (
+            <div className="w-full relative overflow-hidden rounded-lg group">
+              <div className="absolute inset-0 bg-amber-500/20 animate-pulse"></div>
+              <button 
+                onClick={handleReturn}
+                className="w-full flex items-center justify-center gap-2 bg-[#2140d7] hover:bg-blue-600 text-white py-2.5 relative z-10 border border-[#2140d7] transition-all active:scale-95 shadow-[0_0_20px_rgba(33,64,215,0.4)]"
+              >
+                <PlayCircle className="w-5 h-5" />
+                <span className="font-medium">Voltar ao Atendimento</span>
+                <span className="font-mono ml-2 opacity-80">({currentTimer})</span>
+              </button>
+            </div>
+          )}
+
+          {/* Abas */}
+          <div className="flex border-b border-slate-800 mt-4 overflow-x-auto hide-scrollbar">
+            <button 
+              onClick={() => { setSidebarTab('receptivo'); setActiveChatId(chats[0]?.id || null); }} 
+              className={`flex-1 py-3 px-2 text-[11px] uppercase font-bold flex items-center justify-center gap-1 border-b-2 whitespace-nowrap transition-colors ${sidebarTab === 'receptivo' ? 'border-[#2140d7] text-[#2140d7] bg-[#2140d7]/5' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+            >
+              <Inbox className="w-3.5 h-3.5" /> Receptivo
+              <span className="bg-[#2140d7] text-white text-[9px] px-1.5 rounded-full ml-1">{chats.length}</span>
+            </button>
+            <button 
+              onClick={() => { setSidebarTab('ativo'); setActiveChatId(activeLeads[0]?.id || null); }} 
+              className={`flex-1 py-3 px-2 text-[11px] uppercase font-bold flex items-center justify-center gap-1 border-b-2 whitespace-nowrap transition-colors ${sidebarTab === 'ativo' ? 'border-emerald-500 text-emerald-500 bg-emerald-500/5' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+            >
+              <Sparkles className="w-3.5 h-3.5" /> IA Pool
+            </button>
+            <button 
+              onClick={() => { setSidebarTab('carteira'); setActiveChatId(carteira[0]?.id || null); }} 
+              className={`flex-1 py-3 px-2 text-[11px] uppercase font-bold flex items-center justify-center gap-1 border-b-2 whitespace-nowrap transition-colors ${sidebarTab === 'carteira' ? 'border-purple-500 text-purple-500 bg-purple-500/5' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+            >
+              <Users className="w-3.5 h-3.5" /> Carteira
+            </button>
+          </div>
+        </div>
+
+        {/* Lista de Conversas */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          
+          {sidebarTab === 'receptivo' && chats.map(chat => (
+            <div key={chat.id} onClick={() => selectChat(chat.id)} className={`p-4 border-b border-slate-800/50 cursor-pointer transition-colors relative flex items-start gap-3 ${activeChatId === chat.id ? 'bg-[#2140d7]/10 border-l-4 border-l-[#2140d7]' : 'hover:bg-slate-800/50 border-l-4 border-l-transparent'}`}>
+              <div className="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0 flex items-center justify-center font-bold text-slate-300">
+                {chat.name.charAt(0)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center mb-1">
+                  <h3 className="font-medium text-slate-200 text-sm truncate pr-2">{chat.name}</h3>
+                  <span className="text-xs text-slate-500 flex-shrink-0">{chat.time}</span>
+                </div>
+                <p className="text-xs text-slate-400 truncate pr-6">{chat.lastMessage}</p>
+              </div>
+              {chat.unread > 0 && (
+                <div className="absolute right-4 bottom-4 w-5 h-5 bg-[#2140d7] rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-[0_0_10px_rgba(33,64,215,0.5)]">
+                  {chat.unread}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {sidebarTab === 'ativo' && (
+            <div className="p-4 flex flex-col h-full">
+              <button 
+                onClick={handlePullLead}
+                disabled={availablePool.length === 0 || status === 'paused'}
+                className="w-full mb-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 text-white py-3 rounded-lg border border-emerald-500 transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.3)] relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                <BrainCircuit className="w-4 h-4" /> 
+                {availablePool.length > 0 ? `Puxar Lead IA (${availablePool.length})` : 'Sem leads na fila'}
+              </button>
+              
+              {activeLeads.length === 0 ? (
+                <div className="text-center text-slate-500 mt-10 text-sm flex flex-col items-center">
+                  <Sparkles className="w-10 h-10 mb-2 opacity-20" />
+                  Nenhum lead em atendimento ativo. Puxe um novo lead pré-qualificado pela IA para começar.
+                </div>
+              ) : (
+                activeLeads.map(lead => (
+                  <div key={lead.id} onClick={() => selectChat(lead.id)} className={`p-4 border-b border-slate-800/50 cursor-pointer transition-colors relative flex items-start gap-3 rounded-lg mb-2 ${activeChatId === lead.id ? 'bg-emerald-500/10 border-l-4 border-l-emerald-500' : 'hover:bg-slate-800/50 border-l-4 border-l-transparent bg-slate-900/50'}`}>
+                    <div className="w-10 h-10 rounded-full bg-emerald-900/50 border border-emerald-500/30 flex-shrink-0 flex items-center justify-center font-bold text-emerald-400">
+                      {lead.score}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-slate-200 text-sm truncate pr-2">{lead.name}</h3>
+                      <p className="text-[10px] text-emerald-400/70 mb-1">Score IA: Alto | {lead.origin}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{lead.info}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {sidebarTab === 'carteira' && carteira.map(chat => (
+            <div key={chat.id} onClick={() => selectChat(chat.id)} className={`p-4 border-b border-slate-800/50 cursor-pointer transition-colors relative flex items-start gap-3 ${activeChatId === chat.id ? 'bg-purple-500/10 border-l-4 border-l-purple-500' : 'hover:bg-slate-800/50 border-l-4 border-l-transparent'}`}>
+              <div className="w-10 h-10 rounded-full bg-purple-900/50 border border-purple-500/30 flex-shrink-0 flex items-center justify-center font-bold text-purple-300">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center mb-1">
+                  <h3 className="font-medium text-slate-200 text-sm truncate pr-2">{chat.name}</h3>
+                  <span className="text-xs text-slate-500 flex-shrink-0">{chat.time}</span>
+                </div>
+                <p className="text-xs text-slate-400 truncate pr-6">{chat.lastMessage}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {}
+      {/* ÁREA DE CHAT */}
+      {activeChat ? (
+        <div className="flex-1 flex flex-col relative bg-slate-950 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] h-full">
+          
+          {/* Overlay de Pausa */}
+          {status === 'paused' && (
+            <div className="absolute inset-0 z-20 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-amber-500 blur-3xl opacity-20 rounded-full"></div>
+                <PauseCircle className="w-20 h-20 text-amber-400 mb-4 animate-pulse relative z-10" />
+              </div>
+              <h2 className="text-3xl font-bold text-white mb-2">Atendimento Pausado</h2>
+              <p className="text-slate-400 mb-6 text-lg">Motivo: {pauseReason?.name}</p>
+              <div className="text-5xl font-mono text-amber-400 font-bold mb-8 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">
+                {currentTimer}
+              </div>
+              <button onClick={handleReturn} className="bg-[#2140d7] hover:bg-blue-600 text-white px-8 py-4 rounded-full font-bold text-lg transition-all shadow-[0_0_30px_rgba(33,64,215,0.4)] hover:shadow-[0_0_40px_rgba(33,64,215,0.6)] flex items-center gap-3 hover:scale-105 active:scale-95">
+                <PlayCircle className="w-6 h-6" /> Retornar Agora
+              </button>
+            </div>
+          )}
+
+          {/* Header do Chat */}
+          <div className="h-16 md:h-20 border-b border-slate-800 bg-[#111827]/90 backdrop-blur-sm flex items-center justify-between px-4 md:px-6 z-10 pl-16 md:pl-6">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${sidebarTab === 'receptivo' ? 'bg-[#2140d7]' : sidebarTab === 'ativo' ? 'bg-emerald-600' : 'bg-purple-600'}`}>
+                {activeChat.name.charAt(0)}
+              </div>
+              <div>
+                <h2 className="font-bold text-slate-100">{activeChat.name}</h2>
+                <span className={`text-xs flex items-center gap-1 ${sidebarTab === 'receptivo' ? 'text-blue-400' : sidebarTab === 'ativo' ? 'text-emerald-400' : 'text-purple-400'}`}>
+                  {sidebarTab === 'receptivo' ? <MessageCircle className="w-3 h-3"/> : sidebarTab === 'ativo' ? <PhoneCall className="w-3 h-3"/> : <Users className="w-3 h-3"/>}
+                  {sidebarTab === 'receptivo' ? 'Atendimento Receptivo' : sidebarTab === 'ativo' ? `Prospecção Ativa AI - ${activeChat.phone}` : 'Cliente Carteira'}
+                </span>
+              </div>
+            </div>
+            <button className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-2 rounded-lg">
+              <MoreVertical className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Mensagens */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar relative z-10">
+            {activeChat.messages && activeChat.messages.map((msg, idx) => (
+              <div key={idx} className={`flex ${msg.sender === 'agent' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2`}>
+                <div className={`max-w-[85%] md:max-w-[70%] rounded-2xl p-3 md:p-4 shadow-lg ${
+                  msg.sender === 'agent' 
+                    ? (sidebarTab === 'receptivo' ? 'bg-gradient-to-br from-[#2140d7] to-blue-600 text-white rounded-tr-sm' : 
+                       sidebarTab === 'ativo' ? 'bg-gradient-to-br from-emerald-600 to-emerald-500 text-white rounded-tr-sm' : 
+                       'bg-gradient-to-br from-purple-600 to-purple-500 text-white rounded-tr-sm')
+                    : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-sm'
+                }`}>
+                  <p className="text-sm md:text-base leading-relaxed">{msg.text}</p>
+                  <span className={`text-[10px] md:text-xs mt-2 block text-right font-medium ${msg.sender === 'agent' ? 'text-white/70' : 'text-slate-400'}`}>
+                    {msg.time}
+                  </span>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area e Canned Responses */}
+          <div className="bg-[#111827] border-t border-slate-800 z-10 flex flex-col p-3 md:p-4">
+            
+            {/* Quick Replies (Respostas Rápidas) */}
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar mb-3 pb-1">
+              <div className="flex items-center text-slate-500 text-xs px-2 flex-shrink-0 border-r border-slate-700">
+                <MessageSquarePlus className="w-4 h-4 mr-1" /> IA Sugere:
+              </div>
+              {QUICK_REPLIES.map((reply, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => handleSendMessage(null, reply)}
+                  disabled={status === 'paused'}
+                  className="whitespace-nowrap flex-shrink-0 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-full transition-colors active:scale-95 disabled:opacity-50"
+                >
+                  {reply}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={handleSendMessage} className="flex gap-2 md:gap-3 items-end">
+              <textarea 
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Digite sua mensagem (Shift+Enter para pular linha)..." 
+                className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2140d7] focus:ring-1 focus:ring-[#2140d7] transition-all resize-none min-h-[50px] max-h-[120px] custom-scrollbar"
+                disabled={status === 'paused'}
+                rows="1"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage(e);
+                  }
+                }}
+              />
+              <button 
+                type="submit"
+                disabled={status === 'paused' || !inputValue.trim()}
+                className={`flex-shrink-0 text-white w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center transition-all active:scale-95 ${
+                  sidebarTab === 'receptivo' ? 'bg-[#2140d7] hover:bg-blue-600 shadow-[0_0_15px_rgba(33,64,215,0.4)]' : 
+                  sidebarTab === 'ativo' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' :
+                  'bg-purple-600 hover:bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <Send className="w-5 h-5 md:w-6 md:h-6 ml-1" />
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center bg-slate-950 flex-col text-slate-500 p-8 text-center h-full">
+          <img src={LOGO_URL} alt="Tudo On" className="w-32 opacity-20 mb-6 grayscale" />
+          <h2 className="text-xl font-bold text-slate-400 mb-2">Nenhum atendimento selecionado</h2>
+          <p className="text-sm max-w-sm">Selecione uma conversa na lateral ou puxe um novo lead pré-qualificado pela inteligência artificial.</p>
+        </div>
+      )}
+
+      {/* Modal de Pausas */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-[#111827] border border-slate-700 rounded-3xl w-full max-w-md shadow-2xl shadow-[#2140d7]/20 overflow-hidden transform transition-all scale-100">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-gradient-to-r from-slate-900 to-[#111827]">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <PauseCircle className="text-amber-400" /> Selecione o Motivo
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-full transition-colors"><X className="w-5 h-5"/></button>
+            </div>
+            <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              {PAUSE_REASONS.map((reason) => (
+                <button
+                  key={reason.id}
+                  onClick={() => handlePause(reason)}
+                  className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-700/50 hover:border-amber-500/50 hover:bg-slate-800/80 transition-all group active:scale-95"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-xl ${reason.bg} ${reason.color} shadow-inner`}>
+                      {reason.icon}
+                    </div>
+                    <span className="font-semibold text-slate-200 group-hover:text-white text-left">{reason.name}</span>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-amber-400 transform group-hover:translate-x-2 transition-all" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AnalystDashboard = ({ onLogout }) => {
+  // idle -> reading -> ai_analyzing -> success
+  const [uploadStatus, setUploadStatus] = useState('idle'); 
+  const [progress, setProgress] = useState(0);
+  const [activeStrategy, setActiveStrategy] = useState('all');
+
+  const handleUpload = () => {
+    setUploadStatus('reading');
+    setProgress(0);
+    
+    // Simulate Reading CSV
+    let currentProgress = 0;
+    const interval = setInterval(() => {
+      currentProgress += 5;
+      setProgress(currentProgress);
+      
+      if (currentProgress === 50) {
+        setUploadStatus('ai_analyzing');
+      }
+      
+      if (currentProgress >= 100) {
+        clearInterval(interval);
+        setUploadStatus('success');
+      }
+    }, 150);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0B0F19] text-slate-200 font-sans p-4 md:p-8 overflow-y-auto custom-scrollbar">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-[#2140d7] flex items-center gap-3">
+            <BrainCircuit className="text-purple-400 w-8 h-8" /> Tudo On Data & AI
+          </h1>
+          <p className="text-slate-400 mt-2 text-sm md:text-base">Upload de Mailing, Higienização e Distribuição Preditiva</p>
+        </div>
+        <div className="flex items-center gap-4 bg-slate-900/50 p-3 rounded-2xl border border-slate-800 backdrop-blur-md">
+          <div className="text-right hidden md:block">
+            <p className="text-sm font-bold text-white">Mariana (Data Science)</p>
+            <p className="text-xs text-purple-400">Estratégia de Base</p>
+          </div>
+          <button onClick={onLogout} className="bg-slate-800 hover:bg-slate-700 p-3 rounded-xl border border-slate-700 transition-all text-slate-300 hover:text-white hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
+
+      {/* Filtros Estratégicos do Analista */}
+      <div className="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between bg-[#111827] border border-slate-800 p-4 rounded-2xl">
+        <div className="flex items-center gap-3">
+          <Filter className="w-5 h-5 text-purple-400" />
+          <h3 className="font-bold text-slate-200">Macro-Estratégia de Distribuição:</h3>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={() => setActiveStrategy('all')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${activeStrategy === 'all' ? 'bg-purple-600/20 border-purple-500 text-purple-400' : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'}`}
+          >
+            Base Completa (Mix)
+          </button>
+          <button 
+            onClick={() => setActiveStrategy('score')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${activeStrategy === 'score' ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400' : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'}`}
+          >
+            Focar em Score Alto (80+)
+          </button>
+          <button 
+            onClick={() => setActiveStrategy('recuperacao')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${activeStrategy === 'recuperacao' ? 'bg-blue-600/20 border-blue-500 text-blue-400' : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'}`}
+          >
+            Recuperação Inativos (90d)
+          </button>
+          <button 
+            onClick={() => setActiveStrategy('revenda')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${activeStrategy === 'revenda' ? 'bg-pink-600/20 border-pink-500 text-pink-400' : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'}`}
+          >
+            Intenção de Revenda
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Upload Area */}
+        <div className="lg:col-span-2 bg-[#111827] border border-slate-800 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-2xl shadow-[#0B0F19]">
+          {/* Fundo Decorativo */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[80px]"></div>
+          
+          <div className="flex justify-between items-center mb-6 relative z-10">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <FileSpreadsheet className="text-purple-400" /> Importar Base com IA
+            </h2>
+          </div>
+          
+          <div 
+            className={`border-2 border-dashed rounded-3xl p-8 md:p-12 text-center transition-all relative z-10 ${uploadStatus === 'idle' ? 'border-slate-700 hover:border-purple-500 bg-slate-900/40 cursor-pointer group hover:bg-slate-900/80' : 'border-slate-800 bg-slate-900/20'}`}
+            onClick={uploadStatus === 'idle' ? handleUpload : undefined}
+          >
+            {uploadStatus === 'idle' && (
+              <div className="flex flex-col items-center">
+                <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 text-purple-400 group-hover:scale-110 group-hover:bg-purple-600 group-hover:text-white transition-all shadow-[0_0_0_rgba(147,51,234,0)] group-hover:shadow-[0_0_30px_rgba(147,51,234,0.4)]">
+                  <UploadCloud className="w-10 h-10" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-200 mb-2">Arraste seu arquivo .CSV aqui</h3>
+                <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+                  A Inteligência Artificial fará a higienização dos números (WhatsApp valid), removerá duplicados e aplicará um <strong>Lead Score preditivo</strong>.
+                </p>
+              </div>
+            )}
+
+            {(uploadStatus === 'reading' || uploadStatus === 'ai_analyzing') && (
+              <div className="flex flex-col items-center w-full max-w-md mx-auto py-6 animate-in fade-in">
+                {uploadStatus === 'reading' ? (
+                  <Database className="w-16 h-16 text-blue-500 animate-pulse mb-6" />
+                ) : (
+                  <BrainCircuit className="w-16 h-16 text-purple-500 animate-bounce mb-6 filter drop-shadow-[0_0_15px_rgba(147,51,234,0.6)]" />
+                )}
+                
+                <h3 className="text-lg font-bold text-slate-200 mb-4">
+                  {uploadStatus === 'reading' ? '1. Lendo e Higienizando Dados...' : '2. IA Analisando Propensão de Compra...'}
+                </h3>
+                
+                <div className="w-full bg-slate-800 rounded-full h-2 mb-2 overflow-hidden shadow-inner">
+                  <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300 relative" style={{ width: `${progress}%` }}>
+                    <div className="absolute inset-0 bg-white/30 animate-[shimmer_1s_infinite]"></div>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-2 font-mono">{progress}% Concluído</p>
+              </div>
+            )}
+
+            {uploadStatus === 'success' && (
+              <div className="flex flex-col items-center animate-in zoom-in duration-500 py-6">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-emerald-500 blur-2xl opacity-40 rounded-full"></div>
+                  <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mb-6 text-white relative z-10 shadow-[0_0_30px_rgba(16,185,129,0.5)]">
+                    <CheckCircle2 className="w-10 h-10" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-black text-white mb-2">Base Processada com Sucesso!</h3>
+                <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-4 mb-6 flex gap-6 text-left">
+                  <div><span className="block text-xs text-slate-400">Linhas Lidas</span><strong className="text-lg text-white">5.430</strong></div>
+                  <div><span className="block text-xs text-slate-400">Leads Válidos (Wpp)</span><strong className="text-lg text-emerald-400">4.892</strong></div>
+                  <div><span className="block text-xs text-slate-400">Score Alto (IA)</span><strong className="text-lg text-purple-400">1.204</strong></div>
+                </div>
+                <button onClick={() => setUploadStatus('idle')} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(147,51,234,0.4)] hover:shadow-[0_0_30px_rgba(147,51,234,0.6)] hover:-translate-y-1">
+                  Distribuir para a Operação
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Insights da IA */}
+        <div className="bg-gradient-to-b from-[#111827] to-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-6 opacity-10"><BrainCircuit className="w-24 h-24 text-purple-400" /></div>
+          
+          <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 relative z-10">
+            <Sparkles className="text-purple-400" /> Insights Preditivos da IA
+          </h2>
+          
+          <div className="space-y-4 flex-1 relative z-10">
+            <div className="bg-purple-900/20 border border-purple-500/30 rounded-2xl p-4 backdrop-blur-sm">
+              <p className="text-xs text-purple-300 font-bold uppercase tracking-wider mb-2">Padrão Detectado</p>
+              <p className="text-sm text-slate-200">Alta concentração de inativos no <strong>DDD 11</strong> que respondem positivamente a ofertas de "Retorno Vip".</p>
+            </div>
+            
+            <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-2xl p-4 backdrop-blur-sm">
+              <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider mb-2">Previsão de Faturamento</p>
+              <h3 className="text-3xl font-black text-emerald-400 mb-1">R$ 145K</h3>
+              <p className="text-[10px] text-slate-400">Caso 15% da base válida (Alta Propensão) seja convertida nesta semana.</p>
+            </div>
+
+            <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 backdrop-blur-sm">
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-xs text-slate-400 font-bold uppercase">Saúde do Mailing</p>
+                <span className="text-emerald-400 text-xs font-bold bg-emerald-400/10 px-2 py-1 rounded">Alta (89%)</span>
+              </div>
+              <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                <div className="bg-emerald-400 h-1.5 rounded-full w-[89%]"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const LeaderDashboard = ({ onLogout }) => {
+  // Ordenar agentes por vendas (Gamificação)
+  const rankedAgents = [...MOCK_AGENTS].sort((a, b) => b.sales - a.sales);
+  const [timeFilter, setTimeFilter] = useState('hoje');
+  const [teamFilter, setTeamFilter] = useState('todas');
+
+  return (
+    <div className="min-h-screen bg-[#0B0F19] text-slate-200 font-sans p-4 md:p-8 overflow-y-auto custom-scrollbar">
+      
+      {/* Header Premium */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-[#2140d7] flex items-center gap-3">
+            <Monitor className="text-[#2140d7] w-8 h-8" /> Command Center
+          </h1>
+          <p className="text-slate-400 mt-2 text-sm md:text-base">Monitoramento em tempo real e BI de Vendas</p>
+        </div>
+        <div className="flex items-center gap-4 bg-slate-900/50 p-3 rounded-2xl border border-slate-800 backdrop-blur-md">
+          <div className="text-right hidden md:block">
+            <p className="text-sm font-bold text-white">Líder: Roberto</p>
+            <p className="text-xs text-[#2140d7]">Operação Principal</p>
+          </div>
+          <button onClick={onLogout} className="bg-slate-800 hover:bg-slate-700 p-3 rounded-xl border border-slate-700 transition-all text-slate-300 hover:text-white hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
+
+      {/* Barra de Filtros Estratégicos do Líder */}
+      <div className="mb-8 flex flex-col lg:flex-row gap-4 items-center justify-between bg-[#111827]/80 backdrop-blur-md border border-slate-800 p-2 md:p-3 rounded-2xl shadow-lg">
+        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar w-full lg:w-auto">
+          <div className="flex items-center gap-2 px-3 border-r border-slate-700">
+            <ListFilter className="w-4 h-4 text-[#2140d7]" />
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Período</span>
+          </div>
+          <button onClick={() => setTimeFilter('hoje')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${timeFilter === 'hoje' ? 'bg-[#2140d7] text-white shadow-[0_0_10px_rgba(33,64,215,0.4)]' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Hoje</button>
+          <button onClick={() => setTimeFilter('semana')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${timeFilter === 'semana' ? 'bg-[#2140d7] text-white shadow-[0_0_10px_rgba(33,64,215,0.4)]' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>7 Dias</button>
+          <button onClick={() => setTimeFilter('mes')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${timeFilter === 'mes' ? 'bg-[#2140d7] text-white shadow-[0_0_10px_rgba(33,64,215,0.4)]' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Este Mês</button>
+        </div>
+
+        <div className="flex items-center gap-3 w-full lg:w-auto">
+          <div className="flex items-center gap-2 px-3 border-r border-slate-700">
+            <Filter className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Equipe</span>
+          </div>
+          <select 
+            value={teamFilter} 
+            onChange={(e) => setTeamFilter(e.target.value)}
+            className="bg-slate-900 border border-slate-700 text-slate-300 text-sm rounded-lg focus:ring-[#2140d7] focus:border-[#2140d7] block w-full p-2 outline-none cursor-pointer"
+          >
+            <option value="todas">Todas as Equipes (Global)</option>
+            <option value="vendas">Equipe de Vendas (Nível 1)</option>
+            <option value="recuperacao">Equipe de Recuperação</option>
+            <option value="vip">Atendimento VIP / Carteira</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Seção de Meta Estratégica (BI) */}
+      <div className="mb-10">
+        <div className="bg-gradient-to-r from-[#111827] to-[#1a233a] border border-slate-800 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-[0_10px_40px_rgba(33,64,215,0.1)]">
+          {/* Fundo Decorativo */}
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#2140d7] rounded-full blur-[100px] opacity-20"></div>
+
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-8 relative z-10">
+            <div className="w-full lg:w-1/3 text-center lg:text-left">
+              <p className="text-slate-400 text-sm font-bold tracking-widest uppercase mb-2 flex items-center justify-center lg:justify-start gap-2">
+                <Target className="w-4 h-4 text-[#2140d7]" /> Meta de Faturamento
+              </p>
+              <h2 className="text-4xl md:text-5xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">
+                R$ 150.000
+              </h2>
+            </div>
+            
+            <div className="w-full lg:w-2/3">
+              <div className="flex justify-between items-end mb-3">
+                <div>
+                  <p className="text-emerald-400 text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-1">
+                    <TrendingUp className="w-4 h-4" /> Alcançado (Hoje)
+                  </p>
+                  <p className="text-3xl font-black text-emerald-400">
+                    R$ 112.500 <span className="text-base font-medium text-slate-500 opacity-80">(450 vendas)</span>
+                  </p>
+                </div>
+                <div className="text-right flex flex-col items-end">
+                  <span className="text-3xl font-black text-white bg-slate-900/50 px-4 py-1 rounded-xl border border-slate-700">75%</span>
+                </div>
+              </div>
+              <div className="w-full bg-slate-900 rounded-full h-4 mb-1 overflow-hidden border border-slate-800 shadow-inner">
+                <div className="bg-gradient-to-r from-[#2140d7] via-blue-400 to-emerald-400 h-4 rounded-full relative" style={{ width: `75%` }}>
+                  <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Micro KPIs Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 md:gap-4 mt-6">
+          <div className="bg-[#111827] border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-slate-800/50 transition-colors">
+            <UserPlus className="w-6 h-6 text-emerald-400 mb-2" />
+            <h3 className="text-xl font-bold text-white">+84</h3>
+            <p className="text-[10px] uppercase font-bold text-slate-500">Novos</p>
+          </div>
+          <div className="bg-[#111827] border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-slate-800/50 transition-colors">
+            <RefreshCcw className="w-6 h-6 text-blue-400 mb-2" />
+            <h3 className="text-xl font-bold text-white">23</h3>
+            <p className="text-[10px] uppercase font-bold text-slate-500">Recuperados</p>
+          </div>
+          <div className="bg-[#111827] border border-red-900/30 rounded-2xl p-4 flex flex-col items-center justify-center text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-red-500/5 animate-pulse"></div>
+            <AlertOctagon className="w-6 h-6 text-red-500 mb-2 relative z-10" />
+            <h3 className="text-xl font-bold text-red-400 relative z-10">12</h3>
+            <p className="text-[10px] uppercase font-bold text-red-500/70 relative z-10">Inadimplentes</p>
+          </div>
+          <div className="bg-[#111827] border border-orange-900/30 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
+            <TimerOff className="w-6 h-6 text-orange-400 mb-2" />
+            <h3 className="text-xl font-bold text-orange-400">18</h3>
+            <p className="text-[10px] uppercase font-bold text-orange-500/70">Fim de Ciclo</p>
+          </div>
+          <div className="bg-[#111827] border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-slate-800/50 transition-colors">
+            <ShoppingCart className="w-6 h-6 text-pink-400 mb-2" />
+            <h3 className="text-xl font-bold text-white">156</h3>
+            <p className="text-[10px] uppercase font-bold text-slate-500">Revenda</p>
+          </div>
+          <div className="bg-[#111827] border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-slate-800/50 transition-colors">
+            <Layers className="w-6 h-6 text-purple-400 mb-2" />
+            <h3 className="text-xl font-bold text-white">312</h3>
+            <p className="text-[10px] uppercase font-bold text-slate-500">Multimarcas</p>
+          </div>
+          <div className="bg-[#111827] border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-slate-800/50 transition-colors col-span-2 lg:col-span-2">
+            <Database className="w-6 h-6 text-indigo-400 mb-2" />
+            <div className="flex items-end gap-2">
+              <h3 className="text-2xl font-bold text-white">1.840</h3>
+              <span className="text-sm font-bold text-emerald-400">88% Ativa</span>
+            </div>
+            <p className="text-[10px] uppercase font-bold text-slate-500">Base Total</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tropa de Elite (Ranking e Performance) */}
+      <h2 className="text-2xl font-black text-white mb-6 flex items-center gap-3">
+        <Crown className="text-amber-400" /> Tropa de Elite (Ao Vivo)
+      </h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {rankedAgents.map((agent, index) => {
+          const isTop1 = index === 0;
+          return (
+            <div key={agent.id} className={`relative bg-[#111827] border rounded-3xl p-5 overflow-hidden group hover:-translate-y-1 transition-all duration-300 ${isTop1 ? 'border-amber-500/50 shadow-[0_10px_30px_rgba(245,158,11,0.15)]' : 'border-slate-800 hover:border-[#2140d7]/50 hover:shadow-[0_10px_30px_rgba(33,64,215,0.1)]'}`}>
+              
+              {/* Efeito Hover Glass */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+
+              {/* Status Header */}
+              <div className="flex justify-between items-start mb-4 relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg text-white shadow-lg ${isTop1 ? 'bg-gradient-to-br from-amber-400 to-amber-600' : 'bg-gradient-to-br from-slate-700 to-slate-800'}`}>
+                      {agent.name.charAt(0)}
+                    </div>
+                    {isTop1 && <Crown className="w-6 h-6 text-amber-300 absolute -top-3 -right-3 animate-bounce drop-shadow-[0_0_5px_rgba(245,158,11,0.8)]" />}
+                    <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-[#111827] ${agent.status === 'online' ? 'bg-emerald-500' : agent.status === 'paused' ? 'bg-amber-500' : 'bg-slate-500'}`}></div>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-100 text-sm md:text-base">{agent.name}</h3>
+                    <p className={`text-[10px] md:text-xs font-bold uppercase tracking-wider ${agent.status === 'online' ? 'text-emerald-400' : agent.status === 'paused' ? 'text-amber-400' : 'text-slate-500'}`}>
+                      {agent.status === 'online' ? 'Online' : agent.status === 'paused' ? agent.pauseReason : 'Offline'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* KPI Grid Individual */}
+              <div className="grid grid-cols-2 gap-3 mb-4 relative z-10">
+                <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800/50">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Vendas (Dia)</p>
+                  <p className={`text-xl font-black ${isTop1 ? 'text-amber-400' : 'text-white'}`}>{agent.sales}</p>
+                </div>
+                <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800/50">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Conversão</p>
+                  <p className="text-xl font-black text-emerald-400">{agent.convRate}%</p>
+                </div>
+                <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800/50">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">TMA</p>
+                  <p className="text-lg font-bold text-slate-300">{agent.tma}</p>
+                </div>
+                <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800/50">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">CSAT</p>
+                  <p className="text-lg font-bold text-blue-400 flex items-center gap-1">{agent.csat} ★</p>
+                </div>
+              </div>
+
+              {/* Fila Real-time */}
+              <div className="flex justify-between items-center pt-3 border-t border-slate-800/50 relative z-10">
+                <span className="text-xs text-slate-400 font-medium">Chats Ativos Agora</span>
+                <span className="bg-[#2140d7]/20 text-[#2140d7] font-black text-sm px-3 py-1 rounded-lg border border-[#2140d7]/30">
+                  {agent.activeChats}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default function App() {
+  const [currentView, setCurrentView] = useState('splash'); // 'splash', 'selector', 'agent', 'leader', 'analyst'
+
+  // Global Styles injecting
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+      
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+      @keyframes shimmer {
+        100% { transform: translateX(100%); }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
+  if (currentView === 'splash') {
+    return <SplashScreen onComplete={() => setCurrentView('selector')} />;
+  }
+
+  if (currentView === 'selector') {
+    return (
+      <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Glow Effects Background */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-[#2140d7] rounded-full blur-[150px] opacity-20"></div>
+          <div className="absolute top-[80%] -right-[10%] w-[50%] h-[50%] bg-purple-600 rounded-full blur-[150px] opacity-20"></div>
+        </div>
+
+        <div className="bg-[#111827]/80 backdrop-blur-xl p-8 md:p-10 rounded-[2rem] border border-slate-700/50 max-w-md w-full shadow-2xl shadow-black/50 text-center animate-in zoom-in-95 duration-500 relative z-10">
+          <img src={LOGO_URL} alt="Tudo On" className="w-24 md:w-32 mx-auto mb-6 filter drop-shadow-[0_0_15px_rgba(33,64,215,0.5)]" />
+          
+          <h1 className="text-3xl font-black text-white mb-2 tracking-tight">Bem-vindo(a)</h1>
+          <p className="text-slate-400 mb-10 text-sm">Selecione seu ambiente de trabalho</p>
+          
+          <div className="space-y-4">
+            <button 
+              onClick={() => setCurrentView('agent')}
+              className="w-full bg-slate-800/80 hover:bg-gradient-to-r hover:from-slate-800 hover:to-[#2140d7]/20 border border-slate-700 hover:border-[#2140d7] text-white py-4 px-6 rounded-2xl transition-all duration-300 flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-slate-700/50 flex items-center justify-center group-hover:bg-[#2140d7] transition-colors">
+                  <MessageCircle className="w-5 h-5" />
+                </div>
+                <span className="font-bold text-lg">Atendimento</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transform group-hover:translate-x-1 transition-all" />
+            </button>
+            
+            <button 
+              onClick={() => setCurrentView('analyst')}
+              className="w-full bg-slate-800/80 hover:bg-gradient-to-r hover:from-slate-800 hover:to-purple-900/30 border border-slate-700 hover:border-purple-500 text-white py-4 px-6 rounded-2xl transition-all duration-300 flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-slate-700/50 flex items-center justify-center group-hover:bg-purple-500 transition-colors">
+                  <BrainCircuit className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <span className="font-bold text-lg block">Inteligência & IA</span>
+                  <span className="text-[10px] text-slate-400">Upload de CSV e Estratégia</span>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transform group-hover:translate-x-1 transition-all" />
+            </button>
+
+            <button 
+              onClick={() => setCurrentView('leader')}
+              className="w-full bg-gradient-to-r from-[#2140d7] to-blue-600 hover:from-blue-600 hover:to-blue-500 border border-transparent text-white py-4 px-6 rounded-2xl transition-all duration-300 flex items-center justify-between shadow-[0_10px_20px_rgba(33,64,215,0.3)] hover:shadow-[0_15px_30px_rgba(33,64,215,0.5)] hover:-translate-y-1 group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                  <Monitor className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <span className="font-bold text-lg block">Líder / Gestão</span>
+                  <span className="text-[10px] text-blue-200">Monitoramento Real-time</span>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-white transform group-hover:translate-x-1 transition-all" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentView === 'agent') return <AgentView onLogout={() => setCurrentView('selector')} />;
+  if (currentView === 'analyst') return <AnalystDashboard onLogout={() => setCurrentView('selector')} />;
+  if (currentView === 'leader') return <LeaderDashboard onLogout={() => setCurrentView('selector')} />;
+
+  return null;
+}
